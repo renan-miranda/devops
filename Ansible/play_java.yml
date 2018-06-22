@@ -1,0 +1,29 @@
+---
+- hosts: webservers
+  gather_facts: false
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+
+  tasks:
+    - name: add repo for java 8
+      apt_repository: repo='ppa:webupd8team/java' state=present
+
+    - name: set java licence
+      debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' value='true' vtype='select'
+
+    - name: install java 8
+      apt: name=oracle-java8-installer state=latest update-cache=yes force=yes
+
+  tasks:
+    - name: Add docker apt keys
+      apt_key: keyserver=keyserver.ubuntu.com id=36A1D7869245C8950F966E92D8576A8BA88D21E9
+
+    - name: Update apt with Docker repository
+      apt_repository: repo='deb https://get.docker.com docker main' state=present
+
+    - name: Install Docker
+      apt: pkg=lxc-docker update_cache=yes
+
+    - name: Start Docker service
+      service: name=docker state=restarted

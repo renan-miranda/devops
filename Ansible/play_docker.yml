@@ -1,0 +1,47 @@
+---
+- hosts: all
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  vars:
+    #download_url: "http://download.oracle.com/otn-pub/java/jdk/8u171-b11/512cd62ec5174c3487ac17c61aaa89e8/jdk-8u171-linux-x64.tar.gz"
+    #download_folder: "/opt"
+    #java_name: "{{download_folder}}/jdk1.8.0_171"
+    #java_archive: "{{download_folder}}/jdk-8u171-linux-x64.tar.gz"
+
+  tasks:
+    - name: install packages to use a https repository
+      apt: 
+        name=apt-transport-https state=latest force=yes
+        name=ca-certificates state=latest force=yes
+        name=curl state=latest force=yes
+        name=software-properties-common state=latest force=yes
+
+    - name: Add docker apt keys
+      shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+    - name: Add docker apt public key
+      apt_key: keyserver=keyserver.ubuntu.com id=F76221572C52609D
+
+    - name: Update apt with Docker repository (for trusty distribution)
+      apt_repository: repo='deb [arch=amd64] https://download.docker.com/linux/ubuntu trusty stable' state=present validate_certs=yes
+
+    - name: Install Docker
+      apt: name=docker-ce state=latest
+
+    - name: Start Docker service
+      shell: docker run hello-world
+
+    - name: Install pip and pip2 in all servers
+      apt: 
+        name=python-pip state=latest
+
+    - name: Download docker-py for python
+      pip:
+        name: docker-py
+        version: 1.7.0
+
+    - name: Download docker-compose for python
+      pip:
+        name: docker-compose
+        version: 1.7.0

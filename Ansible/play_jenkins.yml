@@ -1,0 +1,25 @@
+#install Jenkins in his dedicated server
+---
+  - hosts: jenkins
+    remote_user: ubuntu
+    become: yes
+    become_method: sudo
+
+    tasks:
+    - name: Pull Jenkins image
+      docker_image: 
+        name: jenkins
+        state: present
+
+    - name: Create docker container
+      docker_container:
+        name: jenkins_container
+        image: jenkins
+        user: root
+        state: started
+        restart: yes
+        ports:
+         - "8080:8080"
+         - "50000:50000"
+        volumes:
+         - "/var/jenkins_home:/var/jenkins_home:z"
