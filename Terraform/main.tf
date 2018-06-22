@@ -17,6 +17,7 @@ resource "aws_key_pair" "auth" {
 # Create Default VPC
 resource "aws_vpc" "prod-main" {
   cidr_block  = "172.17.0.0/16"
+  enable_dns_hostnames = "true"
 
   tags {
     Name = "prod-main"
@@ -66,33 +67,53 @@ resource "aws_network_acl" "prod-nacl" {
   subnet_ids = ["${aws_subnet.subnet-app-main.id}"]
 
   # HTTP access from the VPC
+  #ingress {
+  #  protocol   = "tcp"
+  #  rule_no    = 100
+  #  action     = "allow"
+  #  cidr_block = "0.0.0.0/0"
+  #  from_port  = 80
+  #  to_port    = 80
+  #}
+
+  # HTTPS access from the VPC
+  #ingress {
+  #  protocol   = "tcp"
+  #  rule_no    = 200
+  #  action     = "allow"
+  #  cidr_block = "0.0.0.0/0"
+  #  from_port  = 443
+  #  to_port    = 443
+  #}
+
+  # SSH access from anywhere
+  #ingress {
+  #  protocol   = "tcp"
+  #  rule_no    = 300
+  #  action     = "allow"
+  #  cidr_block = "0.0.0.0/0"
+  #  from_port  = 22
+  #  to_port    = 22
+  #}
+  
+  # Hygieia Port access from anywhere
+  #ingress {
+  #  protocol   = "tcp"
+  #  rule_no    = 400
+  #  action     = "allow"
+  #  cidr_block = "0.0.0.0/0"
+  #  from_port  = 3000
+  #  to_port    = 3000
+  #}
+  
+  # ALL access to anywhere
   ingress {
-    protocol   = "tcp"
+    protocol   = "-1"
     rule_no    = 100
     action     = "allow"
     cidr_block = "0.0.0.0/0"
-    from_port  = 80
-    to_port    = 80
-  }
-
-  # SSH access from anywhere
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 200
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 22
-    to_port    = 22
-  }
-  
-  # Hygieia Port access from anywhere
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 300
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 3000
-    to_port    = 3000
+    from_port  = 0
+    to_port    = 0
   }
   
   # ALL access to anywhere
@@ -125,26 +146,42 @@ resource "aws_security_group" "sg01-jenkins" {
   vpc_id      = "${aws_vpc.prod-main.id}"
 
   # SSH access from anywhere
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  #ingress {
+  #  from_port   = 22
+  #  to_port     = 22
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
 
   # HTTP access from anywhere
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  #ingress {
+  #  from_port   = 80
+  #  to_port     = 80
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
   
   # HTTP access from anywhere
+  #ingress {
+  #  from_port   = 8080
+  #  to_port     = 8080
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
+  
+  # HTTPS access from anywhere
+  #ingress {
+  #  from_port   = 443
+  #  to_port     = 443
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
+  
+  # Inbound internet access
   ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
   
@@ -168,26 +205,42 @@ resource "aws_security_group" "sg01-hygieia" {
   vpc_id      = "${aws_vpc.prod-main.id}"
 
   # SSH access from anywhere
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  #ingress {
+  #  from_port   = 22
+  #  to_port     = 22
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
 
   # HTTP access from anywhere
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  #ingress {
+  #  from_port   = 80
+  #  to_port     = 80
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
+  
+  # HTTPS access from anywhere
+  #ingress {
+  #  from_port   = 443
+  #  to_port     = 443
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
   
   # Hygieia access from anywhere
+  #ingress {
+  #  from_port   = 3000
+  #  to_port     = 3000
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
+  
+  # Inbound internet access
   ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
   
@@ -206,7 +259,7 @@ resource "aws_security_group" "sg01-hygieia" {
 
 # EC2 instance for jenkins
 resource "aws_instance" "jenkins-ec2" {
-  ami = "${lookup(var.images, var.region)}"
+  ami = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.medium"
   subnet_id = "${aws_subnet.subnet-app-main.id}"
   security_groups = ["${aws_security_group.sg01-jenkins.id}"]
@@ -221,7 +274,7 @@ resource "aws_instance" "jenkins-ec2" {
 
 # EC2 instance for hygieia
 resource "aws_instance" "hygieia-ec2" {
-  ami = "${lookup(var.images, var.region)}"
+  ami = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.medium"
   subnet_id = "${aws_subnet.subnet-app-main.id}"
   security_groups = ["${aws_security_group.sg01-hygieia.id}"]
