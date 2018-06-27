@@ -4,8 +4,8 @@ Few steps to run properly:
 
 Terraform:
 
-  $ ./Terraform/terraform plan
-  or
+  $ ./Terraform/terraform plan  
+  or  
   $./Terraform/terraform -var 'access_key=XXX' -var 'access_secret_key=YYY' -var 'key_name=ZZZ' -var 'public_key_path=/path/to/ZZZ.pub'  -var 'region=AAAA'
 
   where:
@@ -28,8 +28,8 @@ Ansible:
 
   Execute in this order:
 
-  $ ansible-playbook -i inventory 01_play_java.yml
-  $ ansible-playbook -i inventory 02_play_maven.yml
-  $ ansible-playbook -i inventory 03_play_docker.yml
-  $ ansible-playbook -i inventory 04_play_jenkins.yml
-  $ ansible-playbook -i inventory 05_play_ssh_keys.yml
+  $ ansible-playbook -i inventory 01_play_java.yml  
+  $ ansible-playbook -i inventory 02_play_maven.yml  
+  $ ansible-playbook -i inventory 03_play_docker.yml  
+  $ ansible-playbook -i inventory 04_play_jenkins.yml  
+  $ ansible-playbook -i inventory 05_play_ssh_keys.yml  
