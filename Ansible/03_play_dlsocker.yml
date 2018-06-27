@@ -1,0 +1,57 @@
+---
+- hosts: all
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  vars:
+   docker_apt_key: "https://download.docker.com/linux/ubuntu/gpg"
+   docker_apt_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu trusty stable"
+   docker_compose_version: "1.22.0-rc1"
+   docker_compose_arch: "Linux-x86_64"
+   docker_compose: "https://github.com/docker/compose/releases/download/{{docker_compose_version}}/docker-compose-{{docker_compose_arch}}"
+   docker_group: "docker"
+   ubuntu_user: "ubuntu"
+
+  tasks:
+    - name: install packages to use a https repository
+      apt: 
+        name=apt-transport-https state=latest force=yes
+        name=ca-certificates state=latest force=yes
+        name=curl state=latest force=yes
+        name=software-properties-common state=latest force=yes
+
+    - name: Add docker apt keys
+      shell: curl -fsSL "{{docker_apt_key}}" | sudo apt-key add -
+
+    - name: Update apt with Docker repository (for trusty distribution)
+      apt_repository: repo="{{docker_apt_repo}}" state=present validate_certs=no
+
+    - name: Install Docker
+      apt: name=docker-ce state=latest
+
+    - name: Install pip and pip2 in all servers
+      apt: 
+        name=python-pip state=latest
+
+    - name: Download docker-py for python
+      pip:
+        name: docker-py
+        version: 1.7.0
+
+    - name: Download docker-compose for python
+      pip:
+        name: docker-compose
+        version: 1.7.0
+
+    - name: Add user ubuntu to docker group
+      shell: usermod -aG "{{docker_group}}" "{{ubuntu_user}}"
+
+    - name: Search docker compose
+      shell: which docker-compose
+      register: compose_dir
+
+    - name: Update docker-compose
+      shell: sudo curl -L "{{docker_compose}}" -o "{{compose_dir.stdout}}"
+
+    - name: Update docker-compose permission
+      shell: sudo chmod +x "{{compose_dir.stdout}}"

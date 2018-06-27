@@ -1,0 +1,52 @@
+---
+- hosts: jenkins
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  vars:
+    jenkins_user: "jenkins"
+    jenkins_apt_key: "https://pkg.jenkins.io/debian-stable/jenkins.io.key"
+    jenkins_apt_repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+    docker_file: "./docker.user"
+    jenkins_docker_dest: "/var/lib/jenkins/.docker.user"
+    aws_env_file: "./aws_hosts.env"
+    jenkins_aws_dest: "/var/lib/jenkins/.aws_hosts.env"
+
+  tasks:
+    - name: Install necessary packages to install jenkins
+      apt: 
+        name=apt-transport-https state=latest force=yes
+        name=ca-certificates state=latest force=yes
+        name=curl state=latest force=yes
+        name=software-properties-common state=latest force=yes
+
+    - name: Add Jenkins apt keys
+      shell: wget -q -O - "{{jenkins_apt_key}}" | sudo apt-key add -
+
+    - name: Update apt with Jenkins repository
+      apt_repository: repo="{{jenkins_apt_repo}}" state=present validate_certs=no
+
+    - name: Install Jenkins
+      apt: name=jenkins state=latest
+
+    - name: Include Jenkins user on Docker group
+      shell: usermod -aG docker,sudo "{{jenkins_user}}"
+
+    - name: Restart Jenkins
+      service: name=jenkins state=restarted
+
+    - name: Copy file with dockerhub user and passwd
+      copy:
+       src: "{{docker_file}}"
+       dest: "{{jenkins_docker_dest}}"
+       owner: "{{jenkins_user}}"
+       group: "{{jenkins_user}}"
+       mode: 0400
+
+    - name: Copy file with AWS environment
+      copy:
+       src: "{{aws_env_file}}"
+       dest: "{{jenkins_aws_dest}}"
+       owner: "{{jenkins_user}}"
+       group: "{{jenkins_user}}"
+       mode: 0400

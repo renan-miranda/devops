@@ -1,0 +1,36 @@
+---
+- hosts: all
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  vars:
+    url: "http://www-us.apache.org/dist/maven/maven-3/3.5.4/binaries/apache-maven-3.5.4-bin.tar.gz"
+    dest_path: "/opt"
+    maven_path: "apache-maven-3.5.4"
+
+  tasks:
+    - name: Extract Maven
+      unarchive:
+        src: "{{url}}"
+        dest: "{{dest_path}}"
+        remote_src: yes
+
+    - name: install mvn link
+      file:
+        state: link
+        force: yes
+        src: "{{dest_path}}/{{maven_path}}/bin/mvn"
+        dest: "/usr/local/bin/mvn"
+        owner: root
+        group: root
+        mode: "u=rwx,go=rx"
+
+    - name: install mvnDebug link
+      file:
+        state: link
+        force: yes
+        src: '{{dest_path}}/{{maven_path}}/bin/mvnDebug'
+        dest: '/usr/local/bin/mvnDebug'
+        owner: root
+        group: root
+        mode: 'u=rwx,go=rx'

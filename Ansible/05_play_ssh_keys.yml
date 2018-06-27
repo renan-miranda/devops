@@ -1,0 +1,51 @@
+---
+- hosts: all
+  become: yes
+  remote_user: ubuntu
+  vars:
+    ubuntu_user: "ubuntu"
+    ubuntu_ssh_dir: "/home/{{ubuntu_user}}/.ssh"
+    key_name: "id_rsa"
+
+  tasks:
+    - name: Create ssh key for ubuntu
+      shell: su - "{{ubuntu_user}}" -c 'ssh-keygen -t rsa -f "{{ubuntu_ssh_dir}}/{{key_name}}" -N ""'
+      args:
+        creates: "{{ubuntu_ssh_dir}}/{{key_name}}"
+
+    - name: fetch all public ssh keys
+      shell: cat "{{ubuntu_ssh_dir}}/{{key_name}}.pub"
+      register: ssh_keys
+
+    - name: deploy keys on all servers
+      authorized_key: user="{{ubuntu_user}}" key="{{ item[0] }}"
+      delegate_to: "{{ item[1] }}"
+      with_nested:
+        - "{{ssh_keys.stdout}}"
+        - "{{groups['all']}}"
+
+- hosts: jenkins
+  become: yes
+  remote_user: ubuntu
+  vars:
+    jenkins_user: "jenkins"
+    ubuntu_user: "ubuntu"
+    jenkins_ssh_dir: "/var/lib/{{jenkins_user}}/.ssh"
+    key_name: "id_rsa_jenkins"
+
+  tasks:
+    - name: Create ssh key for jenkins
+      shell: su - "{{jenkins_user}}" -c 'ssh-keygen -t rsa -f "{{jenkins_ssh_dir}}/{{key_name}}" -N ""'
+      args:
+        creates: "{{jenkins_ssh_dir}}/{{key_name}}"
+
+    - name: fetch all public ssh keys
+      shell: cat "{{jenkins_ssh_dir}}/{{key_name}}.pub"
+      register: ssh_keys
+
+    - name: deploy keys on all servers
+      authorized_key: user="{{ubuntu_user}}" key="{{ item[0] }}"
+      delegate_to: "{{ item[1] }}"
+      with_nested:
+        - "{{ssh_keys.stdout}}"
+        - "{{groups['all']}}"
