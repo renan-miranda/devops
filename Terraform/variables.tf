@@ -54,25 +54,3 @@ variable "azs" {
 	"us-east-2"      = "us-east-2a"
     }
 }
-
-# Amazon Linux AMI 2018.03.0 (HVM), SSD Volume Type
-variable "images" {
-    type    = "map"
-    default = {
-	"ap-northeast-1" = "ami-92df37ed"
-	"ap-northeast-2" = "ami-c10fa6af"
-	"ap-south-1" 	 = "ami-76d6f519"
-	"ap-southeast-1" = "ami-de90a5a2"
-	"ap-southeast-2" = "ami-423bec20"
-	"ca-central-1"	 = "ami-338a0a57"
-	"eu-central-1"	 = "ami-9a91b371"
-	"eu-west-1"      = "ami-ca0135b3"
-	"eu-west-2"      = "ami-a36f8dc4"
-	"eu-west-3"      = "ami-969c2deb"
-	"sa-east-1"      = "ami-3885d854"
-	"us-west-1"      = "ami-25110f45"
-	"us-west-2"      = "ami-e251209a"
-	"us-east-1"      = "ami-14c5486b"
-	"us-east-2"      = "ami-922914f7"
-	}
-}

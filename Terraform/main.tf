@@ -66,46 +66,6 @@ resource "aws_network_acl" "prod-nacl" {
   vpc_id = "${aws_vpc.prod-main.id}"
   subnet_ids = ["${aws_subnet.subnet-app-main.id}"]
 
-  # HTTP access from the VPC
-  #ingress {
-  #  protocol   = "tcp"
-  #  rule_no    = 100
-  #  action     = "allow"
-  #  cidr_block = "0.0.0.0/0"
-  #  from_port  = 80
-  #  to_port    = 80
-  #}
-
-  # HTTPS access from the VPC
-  #ingress {
-  #  protocol   = "tcp"
-  #  rule_no    = 200
-  #  action     = "allow"
-  #  cidr_block = "0.0.0.0/0"
-  #  from_port  = 443
-  #  to_port    = 443
-  #}
-
-  # SSH access from anywhere
-  #ingress {
-  #  protocol   = "tcp"
-  #  rule_no    = 300
-  #  action     = "allow"
-  #  cidr_block = "0.0.0.0/0"
-  #  from_port  = 22
-  #  to_port    = 22
-  #}
-  
-  # Hygieia Port access from anywhere
-  #ingress {
-  #  protocol   = "tcp"
-  #  rule_no    = 400
-  #  action     = "allow"
-  #  cidr_block = "0.0.0.0/0"
-  #  from_port  = 3000
-  #  to_port    = 3000
-  #}
-  
   # ALL access to anywhere
   ingress {
     protocol   = "-1"
@@ -145,38 +105,6 @@ resource "aws_security_group" "sg01-jenkins" {
   description = "Used in the Jenkins Server"
   vpc_id      = "${aws_vpc.prod-main.id}"
 
-  # SSH access from anywhere
-  #ingress {
-  #  from_port   = 22
-  #  to_port     = 22
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-
-  # HTTP access from anywhere
-  #ingress {
-  #  from_port   = 80
-  #  to_port     = 80
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-  
-  # HTTP access from anywhere
-  #ingress {
-  #  from_port   = 8080
-  #  to_port     = 8080
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-  
-  # HTTPS access from anywhere
-  #ingress {
-  #  from_port   = 443
-  #  to_port     = 443
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-  
   # Inbound internet access
   ingress {
     from_port   = 0
@@ -204,38 +132,6 @@ resource "aws_security_group" "sg01-hygieia" {
   description = "Used in the Hygieia Server"
   vpc_id      = "${aws_vpc.prod-main.id}"
 
-  # SSH access from anywhere
-  #ingress {
-  #  from_port   = 22
-  #  to_port     = 22
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-
-  # HTTP access from anywhere
-  #ingress {
-  #  from_port   = 80
-  #  to_port     = 80
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-  
-  # HTTPS access from anywhere
-  #ingress {
-  #  from_port   = 443
-  #  to_port     = 443
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-  
-  # Hygieia access from anywhere
-  #ingress {
-  #  from_port   = 3000
-  #  to_port     = 3000
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
-  
   # Inbound internet access
   ingress {
     from_port   = 0
@@ -267,6 +163,12 @@ resource "aws_instance" "jenkins-ec2" {
   associate_public_ip_address = "true"
   key_name = "${aws_key_pair.auth.id}"
   
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = "80"
+    delete_on_termination = "true"
+  }
+
   tags {
     Name = "jenkins-ec2"
   }
@@ -281,8 +183,55 @@ resource "aws_instance" "hygieia-ec2" {
   private_ip = "172.17.10.200"
   associate_public_ip_address = "true"
   key_name = "${aws_key_pair.auth.id}"
-  
+
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = "80"
+    delete_on_termination = "true"
+  }
+
   tags {
     Name = "hygieia-ec2"
   }
 }
+  
+resource "local_file" "inventory-meta" {
+  filename = "../Ansible/inventory"
+
+  content = <<-EOF
+#Servers for jenkins and hygieia
+[jenkins]
+${aws_instance.jenkins-ec2.public_dns} ansible_connection=ssh ansible_ssh_private_key_file=~/.ssh/prod-key-pair
+
+[hygieia]
+${aws_instance.hygieia-ec2.public_dns} ansible_connection=ssh ansible_ssh_private_key_file=~/.ssh/prod-key-pair
+ EOF
+}
+
+resource "null_resource" "add-known-hosts" {
+  provisioner "local-exec" {
+    command = "ssh-keyscan -t rsa -H ${aws_instance.jenkins-ec2.public_dns} >> ~/.ssh/known_hosts"
+  }
+
+  provisioner "local-exec" {
+    command = "ssh-keyscan -t rsa -H ${aws_instance.hygieia-ec2.public_dns} >> ~/.ssh/known_hosts"
+  }
+}
+
+resource "local_file" "env_aws" {
+  filename = "../Ansible/aws_hosts.env"
+
+  content = <<-EOF
+#Variables to copy to aws servers
+#Jenkins
+JENKINS_PUBLIC_DNS="${aws_instance.jenkins-ec2.public_dns}"
+JENKINS_PUBLIC_IP="${aws_instance.jenkins-ec2.public_ip}"
+JENKINS_PRIVATE_IP="${aws_instance.jenkins-ec2.private_ip}"
+
+#Hygieia
+HYGIEIA_PUBLIC_DNS="${aws_instance.hygieia-ec2.public_dns}"
+HYGIEIA_PUBLIC_IP="${aws_instance.hygieia-ec2.public_ip}"
+HYGIEIA_PRIVATE_IP="${aws_instance.hygieia-ec2.private_ip}"
+ EOF
+}
+
